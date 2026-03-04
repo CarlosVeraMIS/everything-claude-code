@@ -8,6 +8,7 @@ set -euo pipefail
 # - Generates prompt files from commands/*.md
 # - Generates Codex QA wrappers and optional language rule-pack prompts
 # - Installs global git safety hooks (pre-commit and pre-push)
+# - Runs a post-sync global regression sanity check
 # - Normalizes MCP server entries to pnpm dlx and removes duplicate Context7 block
 
 MODE="apply"
@@ -28,6 +29,7 @@ SKILLS_DEST="$CODEX_HOME/skills"
 PROMPTS_SRC="$REPO_ROOT/commands"
 PROMPTS_DEST="$CODEX_HOME/prompts"
 HOOKS_INSTALLER="$REPO_ROOT/scripts/codex/install-global-git-hooks.sh"
+SANITY_CHECKER="$REPO_ROOT/scripts/codex/check-codex-global-state.sh"
 CURSOR_RULES_DIR="$REPO_ROOT/.cursor/rules"
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -126,6 +128,7 @@ require_path "$AGENTS_CODEX_SUPP_SRC" "ECC Codex AGENTS supplement"
 require_path "$SKILLS_SRC" "ECC skills directory"
 require_path "$PROMPTS_SRC" "ECC commands directory"
 require_path "$HOOKS_INSTALLER" "ECC global git hooks installer"
+require_path "$SANITY_CHECKER" "ECC global sanity checker"
 require_path "$CURSOR_RULES_DIR" "ECC Cursor rules directory"
 require_path "$CONFIG_FILE" "Codex config.toml"
 
@@ -444,6 +447,13 @@ if [[ "$MODE" == "dry-run" ]]; then
   "$HOOKS_INSTALLER" --dry-run
 else
   "$HOOKS_INSTALLER"
+fi
+
+log "Running global regression sanity check"
+if [[ "$MODE" == "dry-run" ]]; then
+  printf '[dry-run] %s\n' "$SANITY_CHECKER"
+else
+  "$SANITY_CHECKER"
 fi
 
 log "Sync complete"
