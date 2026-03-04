@@ -19,6 +19,8 @@ CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 
 CONFIG_FILE="$CODEX_HOME/config.toml"
 AGENTS_FILE="$CODEX_HOME/AGENTS.md"
+AGENTS_ROOT_SRC="$REPO_ROOT/AGENTS.md"
+AGENTS_CODEX_SUPP_SRC="$REPO_ROOT/.codex/AGENTS.md"
 SKILLS_SRC="$REPO_ROOT/.agents/skills"
 SKILLS_DEST="$CODEX_HOME/skills"
 PROMPTS_SRC="$REPO_ROOT/commands"
@@ -116,6 +118,7 @@ generate_prompt_file() {
 }
 
 require_path "$REPO_ROOT/AGENTS.md" "ECC AGENTS.md"
+require_path "$AGENTS_CODEX_SUPP_SRC" "ECC Codex AGENTS supplement"
 require_path "$SKILLS_SRC" "ECC skills directory"
 require_path "$PROMPTS_SRC" "ECC commands directory"
 require_path "$CONFIG_FILE" "Codex config.toml"
@@ -131,8 +134,17 @@ if [[ -f "$AGENTS_FILE" ]]; then
   run_or_echo "cp \"$AGENTS_FILE\" \"$BACKUP_DIR/AGENTS.md\""
 fi
 
-log "Replacing global AGENTS.md with ECC AGENTS.md"
-run_or_echo "cp \"$REPO_ROOT/AGENTS.md\" \"$AGENTS_FILE\""
+log "Replacing global AGENTS.md with ECC AGENTS + Codex supplement"
+if [[ "$MODE" == "dry-run" ]]; then
+  printf '[dry-run] compose %s from %s + %s\n' "$AGENTS_FILE" "$AGENTS_ROOT_SRC" "$AGENTS_CODEX_SUPP_SRC"
+else
+  {
+    cat "$AGENTS_ROOT_SRC"
+    printf '\n\n---\n\n'
+    printf '# Codex Supplement (From ECC .codex/AGENTS.md)\n\n'
+    cat "$AGENTS_CODEX_SUPP_SRC"
+  } > "$AGENTS_FILE"
+fi
 
 log "Syncing ECC Codex skills"
 run_or_echo "mkdir -p \"$SKILLS_DEST\""
