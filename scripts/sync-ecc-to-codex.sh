@@ -6,6 +6,8 @@ set -euo pipefail
 # - Replaces AGENTS.md with ECC AGENTS.md
 # - Syncs Codex-ready skills from .agents/skills
 # - Generates prompt files from commands/*.md
+# - Generates Codex QA wrappers and optional language rule-pack prompts
+# - Installs global git safety hooks (pre-commit and pre-push)
 # - Normalizes MCP server entries to pnpm dlx and removes duplicate Context7 block
 
 MODE="apply"
@@ -25,6 +27,8 @@ SKILLS_SRC="$REPO_ROOT/.agents/skills"
 SKILLS_DEST="$CODEX_HOME/skills"
 PROMPTS_SRC="$REPO_ROOT/commands"
 PROMPTS_DEST="$CODEX_HOME/prompts"
+HOOKS_INSTALLER="$REPO_ROOT/scripts/codex/install-global-git-hooks.sh"
+CURSOR_RULES_DIR="$REPO_ROOT/.cursor/rules"
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR="$CODEX_HOME/backups/ecc-$STAMP"
@@ -121,6 +125,8 @@ require_path "$REPO_ROOT/AGENTS.md" "ECC AGENTS.md"
 require_path "$AGENTS_CODEX_SUPP_SRC" "ECC Codex AGENTS supplement"
 require_path "$SKILLS_SRC" "ECC skills directory"
 require_path "$PROMPTS_SRC" "ECC commands directory"
+require_path "$HOOKS_INSTALLER" "ECC global git hooks installer"
+require_path "$CURSOR_RULES_DIR" "ECC Cursor rules directory"
 require_path "$CONFIG_FILE" "Codex config.toml"
 
 log "Mode: $MODE"
@@ -184,6 +190,196 @@ if [[ "$MODE" == "apply" ]]; then
   sort -u "$manifest" -o "$manifest"
 fi
 
+log "Generating Codex tool prompts + optional rule-pack prompts"
+extension_manifest="$PROMPTS_DEST/ecc-extension-prompts-manifest.txt"
+if [[ "$MODE" == "dry-run" ]]; then
+  printf '[dry-run] > %s\n' "$extension_manifest"
+else
+  : > "$extension_manifest"
+fi
+
+extension_count=0
+
+write_extension_prompt() {
+  local name="$1"
+  local file="$PROMPTS_DEST/$name"
+  if [[ "$MODE" == "dry-run" ]]; then
+    printf '[dry-run] generate %s\n' "$file"
+  else
+    cat > "$file"
+    printf '%s\n' "$name" >> "$extension_manifest"
+  fi
+  extension_count=$((extension_count + 1))
+}
+
+write_extension_prompt "ecc-tool-run-tests.md" <<EOF
+# ECC Tool Prompt: run-tests
+
+Run the repository test suite with package-manager autodetection and concise reporting.
+
+## Instructions
+1. Detect package manager from lock files in this order: \`pnpm-lock.yaml\`, \`bun.lockb\`, \`yarn.lock\`, \`package-lock.json\`.
+2. Detect available scripts or test commands for this repo.
+3. Execute tests with the best project-native command.
+4. If tests fail, report failing files/tests first, then the smallest likely fix list.
+5. Do not change code unless explicitly asked.
+
+## Output Format
+\`\`\`
+RUN TESTS: [PASS/FAIL]
+Command used: <command>
+Summary: <x passed / y failed>
+Top failures:
+- ...
+Suggested next step:
+- ...
+\`\`\`
+EOF
+
+write_extension_prompt "ecc-tool-check-coverage.md" <<EOF
+# ECC Tool Prompt: check-coverage
+
+Analyze coverage and compare it to an 80% threshold (or a threshold I specify).
+
+## Instructions
+1. Find existing coverage artifacts first (\`coverage/coverage-summary.json\`, \`coverage/coverage-final.json\`, \`.nyc_output/coverage.json\`).
+2. If missing, run the project's coverage command using the detected package manager.
+3. Report total coverage and top under-covered files.
+4. Fail the report if coverage is below threshold.
+
+## Output Format
+\`\`\`
+COVERAGE: [PASS/FAIL]
+Threshold: <n>%
+Total lines: <n>%
+Total branches: <n>% (if available)
+Worst files:
+- path: xx%
+Recommended focus:
+- ...
+\`\`\`
+EOF
+
+write_extension_prompt "ecc-tool-security-audit.md" <<EOF
+# ECC Tool Prompt: security-audit
+
+Run a practical security audit: dependency vulnerabilities + secret scan + high-risk code patterns.
+
+## Instructions
+1. Run dependency audit command for this repo/package manager.
+2. Scan source and staged changes for high-signal secrets (OpenAI keys, GitHub tokens, AWS keys, private keys).
+3. Scan for risky patterns (\`eval(\`, \`dangerouslySetInnerHTML\`, unsanitized \`innerHTML\`, obvious SQL string interpolation).
+4. Prioritize findings by severity: CRITICAL, HIGH, MEDIUM, LOW.
+5. Do not auto-fix unless I explicitly ask.
+
+## Output Format
+\`\`\`
+SECURITY AUDIT: [PASS/FAIL]
+Dependency vulnerabilities: <summary>
+Secrets findings: <count>
+Code risk findings: <count>
+Critical issues:
+- ...
+Remediation plan:
+1. ...
+2. ...
+\`\`\`
+EOF
+
+write_extension_prompt "ecc-rules-pack-common.md" <<EOF
+# ECC Rule Pack: common (optional)
+
+Apply ECC common engineering rules for this session. Use these files as the source of truth:
+
+- \`$CURSOR_RULES_DIR/common-agents.md\`
+- \`$CURSOR_RULES_DIR/common-coding-style.md\`
+- \`$CURSOR_RULES_DIR/common-development-workflow.md\`
+- \`$CURSOR_RULES_DIR/common-git-workflow.md\`
+- \`$CURSOR_RULES_DIR/common-hooks.md\`
+- \`$CURSOR_RULES_DIR/common-patterns.md\`
+- \`$CURSOR_RULES_DIR/common-performance.md\`
+- \`$CURSOR_RULES_DIR/common-security.md\`
+- \`$CURSOR_RULES_DIR/common-testing.md\`
+
+Treat these as strict defaults for planning, implementation, review, and verification in this repo.
+EOF
+
+write_extension_prompt "ecc-rules-pack-typescript.md" <<EOF
+# ECC Rule Pack: typescript (optional)
+
+Apply ECC common rules plus TypeScript-specific rules for this session.
+
+## Common
+Use \`$PROMPTS_DEST/ecc-rules-pack-common.md\`.
+
+## TypeScript Extensions
+- \`$CURSOR_RULES_DIR/typescript-coding-style.md\`
+- \`$CURSOR_RULES_DIR/typescript-hooks.md\`
+- \`$CURSOR_RULES_DIR/typescript-patterns.md\`
+- \`$CURSOR_RULES_DIR/typescript-security.md\`
+- \`$CURSOR_RULES_DIR/typescript-testing.md\`
+
+Language-specific guidance overrides common rules when they conflict.
+EOF
+
+write_extension_prompt "ecc-rules-pack-python.md" <<EOF
+# ECC Rule Pack: python (optional)
+
+Apply ECC common rules plus Python-specific rules for this session.
+
+## Common
+Use \`$PROMPTS_DEST/ecc-rules-pack-common.md\`.
+
+## Python Extensions
+- \`$CURSOR_RULES_DIR/python-coding-style.md\`
+- \`$CURSOR_RULES_DIR/python-hooks.md\`
+- \`$CURSOR_RULES_DIR/python-patterns.md\`
+- \`$CURSOR_RULES_DIR/python-security.md\`
+- \`$CURSOR_RULES_DIR/python-testing.md\`
+
+Language-specific guidance overrides common rules when they conflict.
+EOF
+
+write_extension_prompt "ecc-rules-pack-golang.md" <<EOF
+# ECC Rule Pack: golang (optional)
+
+Apply ECC common rules plus Go-specific rules for this session.
+
+## Common
+Use \`$PROMPTS_DEST/ecc-rules-pack-common.md\`.
+
+## Go Extensions
+- \`$CURSOR_RULES_DIR/golang-coding-style.md\`
+- \`$CURSOR_RULES_DIR/golang-hooks.md\`
+- \`$CURSOR_RULES_DIR/golang-patterns.md\`
+- \`$CURSOR_RULES_DIR/golang-security.md\`
+- \`$CURSOR_RULES_DIR/golang-testing.md\`
+
+Language-specific guidance overrides common rules when they conflict.
+EOF
+
+write_extension_prompt "ecc-rules-pack-swift.md" <<EOF
+# ECC Rule Pack: swift (optional)
+
+Apply ECC common rules plus Swift-specific rules for this session.
+
+## Common
+Use \`$PROMPTS_DEST/ecc-rules-pack-common.md\`.
+
+## Swift Extensions
+- \`$CURSOR_RULES_DIR/swift-coding-style.md\`
+- \`$CURSOR_RULES_DIR/swift-hooks.md\`
+- \`$CURSOR_RULES_DIR/swift-patterns.md\`
+- \`$CURSOR_RULES_DIR/swift-security.md\`
+- \`$CURSOR_RULES_DIR/swift-testing.md\`
+
+Language-specific guidance overrides common rules when they conflict.
+EOF
+
+if [[ "$MODE" == "apply" ]]; then
+  sort -u "$extension_manifest" -o "$extension_manifest"
+fi
+
 if [[ "$MODE" == "apply" ]]; then
   log "Normalizing MCP server config to pnpm"
 
@@ -243,10 +439,17 @@ else
   log "Skipping MCP config normalization in dry-run mode"
 fi
 
+log "Installing global git safety hooks"
+if [[ "$MODE" == "dry-run" ]]; then
+  "$HOOKS_INSTALLER" --dry-run
+else
+  "$HOOKS_INSTALLER"
+fi
+
 log "Sync complete"
 log "Backup saved at: $BACKUP_DIR"
 log "Skills synced: $skills_count"
-log "Prompts generated: $prompt_count"
+log "Prompts generated: $((prompt_count + extension_count)) (commands: $prompt_count, extensions: $extension_count)"
 
 if [[ "$MODE" == "apply" ]]; then
   log "Done. Restart Codex CLI to reload AGENTS, prompts, and MCP servers."
