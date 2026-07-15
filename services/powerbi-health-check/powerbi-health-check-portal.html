@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIvisualization - Power BI Health Check Portal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 15px;
+        }
+
+        /* Health Score Gauge */
+        .gauge-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 15px;
+        }
+
+        .gauge-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+        }
+
+        .gauge-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .gauge-unit {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .gauge-status {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .status-ok { color: #4caf50; }
+        .status-warning { color: #ff9800; }
+        .status-critical { color: #f44336; }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f5f5f5;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 2px solid #ddd;
+        }
+
+        td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-ok { background: #c8e6c9; color: #2e7d32; }
+        .badge-warning { background: #ffe0b2; color: #e65100; }
+        .badge-critical { background: #ffcdd2; color: #c62828; }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+        }
+
+        /* Capacity Comparison */
+        .scenario {
+            margin: 15px 0;
+            padding: 12px;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+        }
+
+        .scenario-label {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .scenario-detail {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+            margin: 3px 0;
+        }
+
+        .sku {
+            font-family: monospace;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .savings {
+            color: #4caf50;
+            font-weight: 600;
+        }
+
+        /* Roadmap */
+        .roadmap-item {
+            margin: 15px 0;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .roadmap-item.phase1 { border-color: #ff9800; }
+        .roadmap-item.phase2 { border-color: #2196f3; }
+        .roadmap-item.phase3 { border-color: #4caf50; }
+        .roadmap-item.phase4 { border-color: #9c27b0; }
+
+        .roadmap-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .roadmap-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #999;
+        }
+
+        /* Matrix Chart */
+        .matrix-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .bubble:hover {
+            transform: scale(1.1);
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .two-col {
+            grid-column: span 2;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+            .two-col {
+                grid-column: 1 / -1;
+            }
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #666;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 13px;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Power BI Health Check Portal</h1>
+            <p class="subtitle">Diagnóstico de calidad, optimización y planificación de capacidad para Fabric</p>
+        </header>
+
+        <div class="grid">
+            <!-- Health Score Overview -->
+            <div class="card">
+                <div class="card-title">📊 Health Score Actual</div>
+                <div class="gauge-container">
+                    <canvas id="healthGauge"></canvas>
+                </div>
+                <div class="gauge-value">
+                    <div class="gauge-number">72</div>
+                    <div class="gauge-unit">/ 100</div>
+                </div>
+                <div class="gauge-status status-warning">⚠️ Requiere Optimización</div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="card">
+                <div class="card-title">📈 Métricas Agregadas</div>
+                <div class="metric-row">
+                    <span class="metric-label">Reportes Analizados</span>
+                    <span class="metric-value">50</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Reportes Críticos</span>
+                    <span class="metric-value" style="color: #f44336;">8</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Memoria Total</span>
+                    <span class="metric-value">34.2 GB</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Usuarios (Medium)</span>
+                    <span class="metric-value">50</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Jerarquías Detectadas</span>
+                    <span class="metric-value">127</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Anti-patrones DAX</span>
+                    <span class="metric-value" style="color: #ff9800;">42</span>
+                </div>
+            </div>
+
+            <!-- Capacity Requirement -->
+            <div class="card">
+                <div class="card-title">💾 Requerimiento Fabric Actual</div>
+                <div class="scenario">
+                    <div class="scenario-label">Sin optimización</div>
+                    <div class="scenario-detail">
+                        <span>CU requerido:</span>
+                        <span>1,044 CU</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Recomendación:</span>
+                        <span class="sku">F16</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Precio/mes:</span>
+                        <span style="color: #f44336; font-weight: 600;">$2,000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Reports by Risk -->
+        <div class="card full-width">
+            <div class="card-title">🔴 Top 8 Reportes por Riesgo</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reporte</th>
+                        <th>Health Score</th>
+                        <th>Severidad</th>
+                        <th>Memory (GB)</th>
+                        <th>Medidas</th>
+                        <th>Top Issue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Dashboard_Ventas</strong></td>
+                        <td>38.5</td>
+                        <td><span class="badge badge-critical">CRÍTICO</span></td>
+                        <td>0.425</td>
+                        <td>45</td>
+                        <td>Memory alto + DAX ineficiente</td>
+                    </tr>
+                    <tr>
+                        <td><strong>KPI_Financiero</strong></td>
+                        <td>42.1</td>
+                        <td><span class="badge badge-critical">CRÍTICO</span></td>
+                        <td>0.512</td>
+                        <td>38</td>
+                        <td>CALCULATE con FILTER anidado</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Inventario_Detalle</strong></td>
+                        <td>55.3</td>
+                        <td><span class="badge badge-warning">ADVERTENCIA</span></td>
+                        <td>0.681</td>
+                        <td>52</td>
+                        <td>Data density baja</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Clientes_RLS</strong></td>
+                        <td>48.9</td>
+                        <td><span class="badge badge-critical">CRÍTICO</span></td>
+                        <td>0.294</td>
+                        <td>28</td>
+                        <td>Complejidad RLS alta</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Producción_Metrics</strong></td>
+                        <td>61.2</td>
+                        <td><span class="badge badge-warning">ADVERTENCIA</span></td>
+                        <td>0.789</td>
+                        <td>67</td>
+                        <td>Refresh > 25 min</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reportes_Exec</strong></td>
+                        <td>64.7</td>
+                        <td><span class="badge badge-warning">ADVERTENCIA</span></td>
+                        <td>0.356</td>
+                        <td>19</td>
+                        <td>Jerarquías complejas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Datos_Históricos</strong></td>
+                        <td>52.4</td>
+                        <td><span class="badge badge-critical">CRÍTICO</span></td>
+                        <td>1.243</td>
+                        <td>91</td>
+                        <td>Memory crítico</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Marketing_Campaigns</strong></td>
+                        <td>58.9</td>
+                        <td><span class="badge badge-warning">ADVERTENCIA</span></td>
+                        <td>0.412</td>
+                        <td>34</td>
+                        <td>SUMX sin CALCULATE</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Effort vs Impact Matrix -->
+        <div class="card full-width">
+            <div class="card-title">📊 Matriz Effort vs Impact (Priorización)</div>
+            <canvas id="matrixChart" style="margin-top: 20px;"></canvas>
+        </div>
+
+        <!-- Optimization Scenarios & ROI -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">✨ Scenario: Básica (DAX + Agg)</div>
+                <div class="scenario">
+                    <div class="scenario-label">Con optimización básica (40h)</div>
+                    <div class="scenario-detail">
+                        <span>Memory:</span>
+                        <span>29 GB (-15%)</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Health Score:</span>
+                        <span>+15 → 87/100</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>CU requerido:</span>
+                        <span>789 CU</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Recomendación:</span>
+                        <span class="sku">F8</span>
+                    </div>
+                    <div class="progress-bar" style="margin-top: 10px;">
+                        <div class="progress-fill" style="width: 85%;"></div>
+                    </div>
+                    <div class="scenario-detail" style="margin-top: 10px;">
+                        <span>Precio/mes:</span>
+                        <span style="color: #4caf50; font-weight: 600;">$1,000</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Ahorro mensual:</span>
+                        <span class="savings">$1,000</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Ahorro anual:</span>
+                        <span class="savings">$12,000</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Inversión (40h @ $150/h):</span>
+                        <span>$6,000</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Payback:</span>
+                        <span class="savings">6 meses</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⚡ Scenario: Intermedia (Archival)</div>
+                <div class="scenario">
+                    <div class="scenario-label">Con optimización intermedia (75h)</div>
+                    <div class="scenario-detail">
+                        <span>Memory:</span>
+                        <span>24 GB (-30%)</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Health Score:</span>
+                        <span>+25 → 97/100</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>CU requerido:</span>
+                        <span>550 CU</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Recomendación:</span>
+                        <span class="sku">F4</span>
+                    </div>
+                    <div class="progress-bar" style="margin-top: 10px;">
+                        <div class="progress-fill" style="width: 70%;"></div>
+                    </div>
+                    <div class="scenario-detail" style="margin-top: 10px;">
+                        <span>Precio/mes:</span>
+                        <span style="color: #4caf50; font-weight: 600;">$500</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Ahorro mensual:</span>
+                        <span class="savings">$1,500</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Ahorro anual:</span>
+                        <span class="savings">$18,000</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Inversión (75h @ $150/h):</span>
+                        <span>$11,250</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Payback:</span>
+                        <span class="savings">7.5 meses</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🚀 Scenario: Completa (Full Refactor)</div>
+                <div class="scenario">
+                    <div class="scenario-label">Con optimización completa (150h)</div>
+                    <div class="scenario-detail">
+                        <span>Memory:</span>
+                        <span>17 GB (-50%)</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Health Score:</span>
+                        <span>+40 → 100/100</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>CU requerido:</span>
+                        <span>425 CU</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Recomendación:</span>
+                        <span class="sku">F4</span>
+                    </div>
+                    <div class="progress-bar" style="margin-top: 10px;">
+                        <div class="progress-fill" style="width: 50%;"></div>
+                    </div>
+                    <div class="scenario-detail" style="margin-top: 10px;">
+                        <span>Precio/mes:</span>
+                        <span style="color: #4caf50; font-weight: 600;">$500</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Ahorro mensual:</span>
+                        <span class="savings">$1,500</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Ahorro anual:</span>
+                        <span class="savings">$18,000</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Inversión (150h @ $150/h):</span>
+                        <span>$22,500</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>Payback:</span>
+                        <span class="savings">15 meses</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optimization Roadmap -->
+        <div class="card full-width">
+            <div class="card-title">🗺️ Roadmap de Optimización (8 Semanas)</div>
+
+            <div class="roadmap-item phase1">
+                <div class="roadmap-title">🟠 Semana 1-2: Análisis & Planificación</div>
+                <div class="roadmap-meta">
+                    <span>40 horas (Básica)</span>
+                    <span>Impacto: Alta</span>
+                    <span>ROI: 6 meses</span>
+                </div>
+            </div>
+
+            <div class="roadmap-item phase2">
+                <div class="roadmap-title">🔵 Semana 3-4: DAX Fixes & Agregaciones</div>
+                <div class="roadmap-meta">
+                    <span>Optimizar 42 anti-patrones DAX</span>
+                    <span>Agregar 8-12 tablas de agregación</span>
+                    <span>Resultado: Health +15</span>
+                </div>
+            </div>
+
+            <div class="roadmap-item phase3">
+                <div class="roadmap-title">🟢 Semana 5-6: Archival & Denormalización (Opcional)</div>
+                <div class="roadmap-meta">
+                    <span>75 horas (Intermedia)</span>
+                    <span>Archival de datos > 2 años</span>
+                    <span>Resultado: Health +25</span>
+                </div>
+            </div>
+
+            <div class="roadmap-item phase4">
+                <div class="roadmap-title">🟣 Semana 7-8: Testing & Migración a Fabric</div>
+                <div class="roadmap-meta">
+                    <span>Validación de salud post-optimización</span>
+                    <span>Migración a OneLake Gold Layer</span>
+                    <span>Resultado: F8 o F4 (vs F16)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary & CTA -->
+        <div class="card full-width">
+            <div class="card-title">📋 Resumen Ejecutivo</div>
+            <div style="line-height: 1.8;">
+                <p><strong>Situación Actual:</strong> 50 reportes con Health Score promedio 72/100. 8 reportes críticos requieren atención inmediata. Inversión Fabric actual sin optimizar: <strong>F16 ($2,000/mes)</strong></p>
+
+                <p style="margin-top: 15px;"><strong>Recomendación:</strong> Ejecutar optimización Básica (40h, $6,000 inversión) para reducir a <strong>F8 ($1,000/mes)</strong>. ROI esperado: <strong>$12,000/año</strong> con payback de 6 meses.</p>
+
+                <p style="margin-top: 15px;"><strong>Valor 3 Años:</strong> $30,000 en ahorros de Fabric + mejora de performance de reportes + reducción de carga de refrescos.</p>
+
+                <p style="margin-top: 15px;"><strong>Próximos Pasos:</strong></p>
+                <ul style="margin-left: 20px; margin-top: 8px;">
+                    <li>✅ Revisar top 8 reportes críticos con su equipo</li>
+                    <li>✅ Priorizar según Effort vs Impact matrix</li>
+                    <li>✅ Aprobar presupuesto de optimización</li>
+                    <li>✅ Iniciar Week 1 del roadmap</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Health Gauge Chart
+        const healthCtx = document.getElementById('healthGauge').getContext('2d');
+        new Chart(healthCtx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [72, 28],
+                    backgroundColor: ['#ff9800', '#eee'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Effort vs Impact Matrix
+        const matrixCtx = document.getElementById('matrixChart').getContext('2d');
+        new Chart(matrixCtx, {
+            type: 'bubble',
+            data: {
+                datasets: [
+                    {
+                        label: 'Dashboard_Ventas',
+                        data: [{ x: 30, y: 85, r: 15 }],
+                        backgroundColor: 'rgba(244, 67, 54, 0.6)'
+                    },
+                    {
+                        label: 'KPI_Financiero',
+                        data: [{ x: 25, y: 80, r: 12 }],
+                        backgroundColor: 'rgba(244, 67, 54, 0.6)'
+                    },
+                    {
+                        label: 'Inventario_Detalle',
+                        data: [{ x: 50, y: 60, r: 18 }],
+                        backgroundColor: 'rgba(255, 152, 0, 0.6)'
+                    },
+                    {
+                        label: 'Clientes_RLS',
+                        data: [{ x: 35, y: 75, r: 14 }],
+                        backgroundColor: 'rgba(244, 67, 54, 0.6)'
+                    },
+                    {
+                        label: 'Producción_Metrics',
+                        data: [{ x: 45, y: 55, r: 16 }],
+                        backgroundColor: 'rgba(255, 152, 0, 0.6)'
+                    },
+                    {
+                        label: 'Reportes_Exec',
+                        data: [{ x: 20, y: 40, r: 10 }],
+                        backgroundColor: 'rgba(76, 175, 80, 0.6)'
+                    },
+                    {
+                        label: 'Datos_Históricos',
+                        data: [{ x: 60, y: 90, r: 20 }],
+                        backgroundColor: 'rgba(244, 67, 54, 0.6)'
+                    },
+                    {
+                        label: 'Marketing_Campaigns',
+                        data: [{ x: 35, y: 65, r: 13 }],
+                        backgroundColor: 'rgba(255, 152, 0, 0.6)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: {
+                            display: true,
+                            text: 'Effort (Horas Estimadas)',
+                            color: '#666'
+                        },
+                        min: 0,
+                        max: 100
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Impact (% Reducción Size)',
+                            color: '#666'
+                        },
+                        min: 0,
+                        max: 100
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
