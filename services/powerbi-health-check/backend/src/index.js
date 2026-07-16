@@ -33,7 +33,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Serve static files (portal UI)
-app.use(express.static(path.join(__dirname, '../../public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -42,6 +42,11 @@ app.use('/api/analysis', analysisRoutes);
 app.use('/api/capacity', capacityRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/health', healthRoutes);
+
+// Serve index.html for root path (SPA)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
 
 // Health check endpoint
 app.get('/ping', (req, res) => {
