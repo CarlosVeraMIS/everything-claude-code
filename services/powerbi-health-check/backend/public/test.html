@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Portal Test</title>
+</head>
+<body>
+  <h1>Health Check Portal - Debug Test</h1>
+
+  <div id="output" style="font-family: monospace; white-space: pre; border: 1px solid #ccc; padding: 20px; margin: 20px 0; background: #f5f5f5;">
+  </div>
+
+  <script>
+    const log = msg => {
+      const out = document.getElementById('output');
+      out.innerText += msg + '\n';
+      console.log(msg);
+    };
+
+    log('1. Testing if scripts load...');
+
+    // Test if we can see the client
+    setTimeout(() => {
+      log('2. Checking HealthCheckClient...');
+      if (typeof HealthCheckClient !== 'undefined') {
+        log('✓ HealthCheckClient loaded successfully');
+        try {
+          const client = new HealthCheckClient();
+          log('✓ HealthCheckClient instantiated');
+          log('   - baseUrl: ' + client.baseUrl);
+          log('   - token: ' + (client.token ? 'present' : 'not set'));
+        } catch (e) {
+          log('✗ Error creating HealthCheckClient: ' + e.message);
+        }
+      } else {
+        log('✗ HealthCheckClient NOT found');
+      }
+    }, 100);
+
+    setTimeout(() => {
+      log('3. Checking HealthCheckApp...');
+      if (typeof HealthCheckApp !== 'undefined') {
+        log('✓ HealthCheckApp loaded successfully');
+      } else {
+        log('✗ HealthCheckApp NOT found');
+      }
+    }, 200);
+
+    setTimeout(() => {
+      log('4. Testing API connectivity...');
+      fetch('/ping')
+        .then(r => r.json())
+        .then(data => {
+          log('✓ API /ping response:');
+          log('   ' + JSON.stringify(data));
+        })
+        .catch(e => {
+          log('✗ API error: ' + e.message);
+        });
+    }, 300);
+  </script>
+
+  <!-- Load the client and app -->
+  <script src="/js/client.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

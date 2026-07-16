@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Health Check - Demo (No Auth Required)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f1419;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    h1 { color: #667eea; margin-bottom: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .card { background: #1a1f29; border: 1px solid #333; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
+    button {
+      background: #667eea; color: white; border: none; padding: 10px 20px;
+      border-radius: 4px; cursor: pointer; margin-right: 10px; margin-bottom: 10px;
+    }
+    button:hover { opacity: 0.9; }
+    input {
+      background: #0f1419; color: #e0e0e0; border: 1px solid #333;
+      padding: 10px; border-radius: 4px; width: 100%; max-width: 300px; margin-bottom: 10px;
+    }
+    pre {
+      background: #0f1419; border: 1px solid #333; padding: 15px;
+      border-radius: 4px; overflow-x: auto; font-size: 12px;
+    }
+    .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+    .success { background: #1b5e20; color: #4caf50; }
+    .error { background: #b71c1c; color: #f44336; }
+    .info { background: #0d47a1; color: #2196f3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏥 Health Check Portal - Demo</h1>
+
+    <div class="card">
+      <h2>1️⃣ System Status</h2>
+      <button onclick="checkStatus()">Check Server Status</button>
+      <div id="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>2️⃣ Test Authentication (Demo)</h2>
+      <input type="text" id="workspace" placeholder="Workspace ID (e.g., test)" value="test">
+      <input type="email" id="email" placeholder="Email" value="test@example.com">
+      <button onclick="testAuth()">Test Token Generation</button>
+      <div id="authResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>3️⃣ Test Extraction (Mock)</h2>
+      <button onclick="testExtraction()">Test Mock Extraction</button>
+      <div id="extractResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>4️⃣ Test Analysis (Mock)</h2>
+      <button onclick="testAnalysis()">Test Mock Analysis</button>
+      <div id="analysisResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>5️⃣ Test Capacity (Mock)</h2>
+      <button onclick="testCapacity()">Test Mock Capacity</button>
+      <div id="capacityResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Full Workflow</h2>
+      <button onclick="runFullWorkflow()">Run Complete Workflow</button>
+      <div id="workflowResult"></div>
+    </div>
+  </div>
+
+  <script>
+    function log(id, message, type = 'info') {
+      const el = document.getElementById(id);
+      const div = document.createElement('div');
+      div.className = `status ${type}`;
+      div.textContent = message;
+      el.appendChild(div);
+      console.log(`[${type}] ${message}`);
+    }
+
+    function clearLog(id) {
+      document.getElementById(id).innerHTML = '';
+    }
+
+    async function checkStatus() {
+      clearLog('status');
+      log('status', '⏳ Checking server...', 'info');
+      try {
+        const res = await fetch('/ping');
+        const data = await res.json();
+        log('status', `✓ Server OK: ${JSON.stringify(data)}`, 'success');
+        log('status', `API is responding correctly`, 'success');
+      } catch (e) {
+        log('status', `✗ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function testAuth() {
+      clearLog('authResult');
+      const workspace = document.getElementById('workspace').value;
+      const email = document.getElementById('email').value;
+
+      log('authResult', `⏳ Requesting token...`, 'info');
+      log('authResult', `Workspace: ${workspace}`, 'info');
+      log('authResult', `Email: ${email}`, 'info');
+
+      try {
+        const res = await fetch('/api/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspaceId: workspace, userEmail: email })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          log('authResult', `✓ Token generated successfully`, 'success');
+          log('authResult', `Token: ${data.accessToken.substring(0, 50)}...`, 'info');
+          localStorage.setItem('testToken', data.accessToken);
+        } else {
+          log('authResult', `Status ${res.status}: ${data.error || 'Unknown error'}`, 'error');
+          if (data.details) {
+            log('authResult', `Details: ${data.details}`, 'info');
+          }
+        }
+      } catch (e) {
+        log('authResult', `✗ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function testExtraction() {
+      clearLog('extractResult');
+      const token = localStorage.getItem('testToken');
+
+      if (!token) {
+        log('extractResult', `✗ No token found. Run authentication first.`, 'error');
+        return;
+      }
+
+      log('extractResult', `⏳ Extracting datasets...`, 'info');
+
+      try {
+        const res = await fetch('/api/extraction/extract', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ workspaceId: 'test' })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          log('extractResult', `✓ Extraction successful`, 'success');
+          log('extractResult', `Extracted ${data.datasetCount} datasets`, 'info');
+        } else {
+          log('extractResult', `Status ${res.status}: ${data.error || 'Unknown error'}`, 'error');
+        }
+      } catch (e) {
+        log('extractResult', `✗ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function testAnalysis() {
+      clearLog('analysisResult');
+      const token = localStorage.getItem('testToken');
+
+      if (!token) {
+        log('analysisResult', `✗ No token found. Run authentication first.`, 'error');
+        return;
+      }
+
+      const mockDatasets = [
+        {
+          datasetId: 'ds1',
+          name: 'Sales Dashboard',
+          tableCount: 8,
+          measureCount: 45,
+          columnCount: 156,
+          estimatedSizeGB: 2.5
+        }
+      ];
+
+      log('analysisResult', `⏳ Analyzing health...`, 'info');
+
+      try {
+        const res = await fetch('/api/analysis/health', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ datasets: mockDatasets })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          log('analysisResult', `✓ Analysis successful`, 'success');
+          log('analysisResult', `Analyzed ${data.analysisCount} datasets`, 'info');
+          if (data.analyses && data.analyses[0]) {
+            log('analysisResult', `Health Score: ${data.analyses[0].healthScore}/100`, 'info');
+          }
+        } else {
+          log('analysisResult', `Status ${res.status}: ${data.error || 'Unknown error'}`, 'error');
+        }
+      } catch (e) {
+        log('analysisResult', `✗ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function testCapacity() {
+      clearLog('capacityResult');
+      const token = localStorage.getItem('testToken');
+
+      if (!token) {
+        log('capacityResult', `✗ No token found. Run authentication first.`, 'error');
+        return;
+      }
+
+      const mockAnalyses = [
+        {
+          datasetId: 'ds1',
+          datasetName: 'Sales Dashboard',
+          healthScore: 72,
+          severity: 'ADVERTENCIA',
+          factors: {
+            memoryFootprint: { score: 0.7 },
+            dataDensity: { score: 0.8 },
+            daxEfficiency: { score: 0.65 },
+            queryPerformance: { score: 0.75 },
+            refreshDuration: { score: 0.85 },
+            rlsComplexity: { score: 0.9 }
+          },
+          issues: ['Memory footprint high', 'DAX inefficient']
+        }
+      ];
+
+      log('capacityResult', `⏳ Calculating capacity...`, 'info');
+
+      try {
+        const res = await fetch('/api/capacity/calculate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ healthAnalyses: mockAnalyses })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          log('capacityResult', `✓ Capacity calculated`, 'success');
+          if (data.currentScenario) {
+            log('capacityResult', `Recommended SKU: ${data.currentScenario.recommendedSKU}`, 'info');
+            log('capacityResult', `Price: $${data.currentScenario.priceMonthly}/month`, 'info');
+          }
+        } else {
+          log('capacityResult', `Status ${res.status}: ${data.error || 'Unknown error'}`, 'error');
+        }
+      } catch (e) {
+        log('capacityResult', `✗ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function runFullWorkflow() {
+      clearLog('workflowResult');
+      log('workflowResult', `🚀 Starting full workflow test...`, 'info');
+
+      const steps = [
+        { name: 'Status Check', fn: checkStatus },
+        { name: 'Authentication', fn: testAuth },
+        { name: 'Extraction', fn: testExtraction },
+        { name: 'Analysis', fn: testAnalysis },
+        { name: 'Capacity', fn: testCapacity }
+      ];
+
+      for (const step of steps) {
+        log('workflowResult', `\n▶ ${step.name}...`, 'info');
+        await step.fn();
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      log('workflowResult', `\n✓ Workflow complete!`, 'success');
+    }
+
+    // Auto-check on load
+    window.onload = () => {
+      log('status', '✓ Page loaded', 'success');
+      checkStatus();
+    };
+  </script>
+</body>
+</html>

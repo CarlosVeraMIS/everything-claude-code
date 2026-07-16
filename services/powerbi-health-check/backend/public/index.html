@@ -71,18 +71,31 @@
     .tab-content {
       animation: fadeIn 0.3s ease;
     }
-  </style>
-</head>
-<body>
-  <div id="app">
-    <!-- Initial loading state -->
-    <div style="
+
+    .loading-screen {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       background: #0f1419;
-    ">
+    }
+
+    .error-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f1419;
+      color: #f44336;
+      padding: 20px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Initial loading state -->
+    <div class="loading-screen">
       <div style="text-align: center;">
         <div style="
           display: inline-block;
@@ -99,10 +112,55 @@
     </div>
   </div>
 
+  <script>
+    // Global error handler
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      console.error('Global error:', msg, error);
+      document.getElementById('app').innerHTML = `
+        <div class="error-screen">
+          <div style="max-width: 600px; text-align: center;">
+            <h2 style="color: #f44336; margin-bottom: 20px;">❌ Portal Error</h2>
+            <p style="color: #ccc; margin-bottom: 10px;"><strong>Error:</strong></p>
+            <p style="color: #999; font-size: 12px; margin-bottom: 20px; white-space: pre-wrap; text-align: left; background: #1a1f29; padding: 15px; border-radius: 4px; overflow-x: auto;">
+${msg}\n${url}:${lineNo}:${columnNo}\n\n${error ? error.stack : 'No stack trace'}</p>
+            <button onclick="location.reload()" style="background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+              Reload Page
+            </button>
+          </div>
+        </div>
+      `;
+      return false;
+    };
+
+    // Check if scripts are loaded
+    function checkScriptsLoaded() {
+      const checks = {
+        'HealthCheckClient': typeof HealthCheckClient !== 'undefined',
+        'HealthCheckApp': typeof HealthCheckApp !== 'undefined'
+      };
+
+      if (!checks.HealthCheckClient || !checks.HealthCheckApp) {
+        throw new Error(
+          'Failed to load required scripts:\n' +
+          Object.entries(checks).map(([name, loaded]) => `  - ${name}: ${loaded ? '✓' : '✗'}`).join('\n')
+        );
+      }
+    }
+  </script>
+
   <!-- API Client -->
   <script src="/js/client.js"></script>
 
   <!-- Application Controller -->
   <script src="/js/app.js"></script>
+
+  <!-- Verify everything loaded -->
+  <script>
+    try {
+      checkScriptsLoaded();
+    } catch (error) {
+      window.onerror(error.message, 'index.html', 0, 0, error);
+    }
+  </script>
 </body>
 </html>
