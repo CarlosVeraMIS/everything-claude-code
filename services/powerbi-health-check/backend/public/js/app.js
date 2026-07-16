@@ -599,12 +599,24 @@ class HealthCheckApp {
   }
 }
 
+// Export class for use in HTML
+window.HealthCheckApp = HealthCheckApp;
+
 // Initialize app when DOM is ready (or immediately if already ready)
+function initializeApp() {
+  try {
+    const appElement = document.getElementById('app');
+    if (appElement) {
+      window.app = new HealthCheckApp();
+    }
+  } catch (error) {
+    console.error('Error initializing app:', error);
+  }
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    new HealthCheckApp();
-  });
+  document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
   // DOM is already ready (scripts loaded at end of body)
-  new HealthCheckApp();
+  initializeApp();
 }
