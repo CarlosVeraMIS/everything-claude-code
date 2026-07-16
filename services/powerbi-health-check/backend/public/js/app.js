@@ -599,7 +599,12 @@ class HealthCheckApp {
   }
 }
 
-// Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize app when DOM is ready (or immediately if already ready)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    new HealthCheckApp();
+  });
+} else {
+  // DOM is already ready (scripts loaded at end of body)
   new HealthCheckApp();
-});
+}

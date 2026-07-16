@@ -22,7 +22,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'", 'http://localhost:3000']
+    }
+  }
+}));
 app.use(compression());
 app.use(cors({
   origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
