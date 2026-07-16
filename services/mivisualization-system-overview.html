@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIvisualization - Sistema Completo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1419;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        }
+
+        h1 {
+            color: white;
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            overflow-x: auto;
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #1a1f29;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .card-content {
+            line-height: 1.6;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+            font-size: 13px;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #999;
+        }
+
+        .metric-value {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-ok { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
+        .badge-warning { background: rgba(255, 152, 0, 0.2); color: #ffb74d; }
+        .badge-critical { background: rgba(244, 67, 54, 0.2); color: #ef5350; }
+        .badge-info { background: rgba(102, 126, 234, 0.2); color: #667eea; }
+
+        .architecture-section {
+            background: #1a1f29;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .architecture-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .layer {
+            background: #0f1419;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .layer-name {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .layer-description {
+            font-size: 12px;
+            color: #aaa;
+            line-height: 1.5;
+        }
+
+        .layer-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .item {
+            background: #1a1f29;
+            border: 1px solid #333;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            text-align: center;
+            color: #ccc;
+        }
+
+        .source {
+            display: inline-block;
+            padding: 6px 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 3px;
+            color: #667eea;
+        }
+
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .pipeline-step {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .arrow {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+
+        th {
+            background: #0f1419;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #999;
+            border-bottom: 2px solid #333;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        tr:hover {
+            background: #232a36;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        .workflow {
+            background: #0f1419;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-top: 15px;
+        }
+
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            gap: 15px;
+        }
+
+        .workflow-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .workflow-content {
+            flex: 1;
+        }
+
+        .workflow-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+            color: #fff;
+        }
+
+        .workflow-desc {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .feature-list li {
+            padding: 6px 0;
+            font-size: 12px;
+            color: #ccc;
+            border-bottom: 1px solid #333;
+        }
+
+        .feature-list li:before {
+            content: "✓ ";
+            color: #4caf50;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .phase {
+            background: #0f1419;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .phase-title {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .phase-meta {
+            font-size: 12px;
+            color: #999;
+            line-height: 1.5;
+        }
+
+        .icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏢 MIvisualization — Sistema Completo</h1>
+            <p class="subtitle">Plataforma integral de Gobierno de BI con centralización multi-fuente (Power BI, Tableau, QuickSight, Excel)</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(event, 'overview')">📊 Overview</button>
+            <button class="tab" onclick="switchTab(event, 'architecture')">🏗️ Arquitectura</button>
+            <button class="tab" onclick="switchTab(event, 'health-check')">🏥 Health Check</button>
+            <button class="tab" onclick="switchTab(event, 'governance')">⚖️ Governance</button>
+            <button class="tab" onclick="switchTab(event, 'monitoring')">📈 Monitoreo</button>
+            <button class="tab" onclick="switchTab(event, 'roadmap')">🗺️ Roadmap</button>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- TAB 1: OVERVIEW -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <div id="overview" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">📌 Plataforma</div>
+                    <div class="card-content">
+                        <div class="stat-row">
+                            <div class="stat-item">
+                                <div class="stat-value">4</div>
+                                <div class="stat-label">Fuentes BI</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">3</div>
+                                <div class="stat-label">Capas</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">∞</div>
+                                <div class="stat-label">Métricas</div>
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; color: #999; margin-top: 15px; line-height: 1.6;">
+                            Centraliza reportes de múltiples fuentes en una plataforma unificada con gobierno automático,
+                            deduplicación de métricas, y planificación de capacidad para migración a Fabric.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🎯 Módulos Principales</div>
+                    <ul class="feature-list">
+                        <li>Power BI Health Check</li>
+                        <li>Tableau Analyzer (roadmap)</li>
+                        <li>QuickSight Extractor (roadmap)</li>
+                        <li>Excel Consolidator (roadmap)</li>
+                        <li>MVO Governance Framework</li>
+                        <li>Fabric Capacity Planner</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">💾 Data Layers (OneLake)</div>
+                    <div class="layer" style="border-color: #ff9800;">
+                        <div class="layer-name">🟠 Bronze</div>
+                        <div class="layer-description">Raw metadata from all sources (JSON, Parquet)</div>
+                    </div>
+                    <div class="layer" style="border-color: #2196f3;">
+                        <div class="layer-name">🔵 Silver</div>
+                        <div class="layer-description">Normalized, deduplicated candidates + analysis</div>
+                    </div>
+                    <div class="layer" style="border-color: #4caf50;">
+                        <div class="layer-name">🟢 Gold</div>
+                        <div class="layer-description">Certified canonical metrics with versioning</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="architecture-section full-width">
+                <div class="architecture-title">📊 Fuentes de Datos Soportadas</div>
+                <div style="margin-top: 15px;">
+                    <span class="source">Power BI (REST API + Scanner API)</span>
+                    <span class="source">Tableau (Metadata API)</span>
+                    <span class="source">QuickSight (AWS SDK)</span>
+                    <span class="source">Excel (XLSX + CSV)</span>
+                    <span class="source">Custom SQL (Via connectors)</span>
+                </div>
+                <p style="font-size: 12px; color: #999; margin-top: 15px;">
+                    Cada fuente genera análisis independiente en Bronze layer, se normaliza en Silver, y se certifica en Gold.
+                </p>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">🚀 Capacidades Principales</div>
+                    <ul class="feature-list" style="margin-top: 0;">
+                        <li>Extracción automática de metadata</li>
+                        <li>Deduplicación con IA (fuzzy matching)</li>
+                        <li>Análisis de calidad (health scores)</li>
+                        <li>Detección de anti-patrones</li>
+                        <li>ROI de optimización</li>
+                        <li>Planificación Fabric SKU</li>
+                        <li>Workflow de certificación</li>
+                        <li>Monitoreo con alertas</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">💡 Beneficios</div>
+                    <ul class="feature-list" style="margin-top: 0;">
+                        <li>Un único punto de verdad (MVO)</li>
+                        <li>Elimina duplicidad de métricas</li>
+                        <li>Reduce costo de infraestructura</li>
+                        <li>Optimiza performance de reportes</li>
+                        <li>Facilita migración a Fabric</li>
+                        <li>Audit trail completo</li>
+                        <li>Control de acceso fino (RBAC)</li>
+                        <li>Escalable a miles de métricas</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📊 Estadísticas Ejemplo</div>
+                    <div class="metric">
+                        <span class="metric-label">Reportes analizados</span>
+                        <span class="metric-value">250+</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Métricas duplicadas detectadas</span>
+                        <span class="metric-value">1,200+</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Potencial ahorro anual</span>
+                        <span class="metric-value">$45k-$120k</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Tiempo extracción</span>
+                        <span class="metric-value">15-30 min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- TAB 2: ARCHITECTURE -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <div id="architecture" class="tab-content">
+            <div class="architecture-section full-width">
+                <div class="architecture-title">🏛️ Arquitectura de 3 Capas</div>
+
+                <div style="margin-top: 20px;">
+                    <div class="layer" style="border-color: #ff9800; border-left: 6px solid #ff9800;">
+                        <div class="layer-name">🟠 BRONZE LAYER - Raw Extraction</div>
+                        <div class="layer-description">
+                            Almacena metadata sin procesar de todas las fuentes. Datos inmutables (append-only).
+                        </div>
+                        <div class="layer-items">
+                            <div class="item">pbi_measures</div>
+                            <div class="item">pbi_dimensions</div>
+                            <div class="item">pbi_hierarchies</div>
+                            <div class="item">pbi_datasets</div>
+                            <div class="item">tbl_sheets</div>
+                            <div class="item">qs_analyses</div>
+                            <div class="item">excel_ranges</div>
+                        </div>
+                        <table style="margin-top: 10px;">
+                            <tr>
+                                <td><strong>Extractor Scripts:</strong></td>
+                                <td>extract_powerbi.py | extract_tableau.py | extract_quicksight.py</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Frecuencia:</strong></td>
+                                <td>Diaria (scheduled via Azure Functions)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Volumen:</strong></td>
+                                <td>~100MB per 1000 reportes</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="text-align: center; margin: 20px 0; color: #667eea; font-size: 20px;">⬇️</div>
+
+                    <div class="layer" style="border-color: #2196f3; border-left: 6px solid #2196f3;">
+                        <div class="layer-name">🔵 SILVER LAYER - Analyzed & Candidates</div>
+                        <div class="layer-description">
+                            Normalización, deduplicación, análisis de salud y conflictos. Datos enriquecidos listos para revisión.
+                        </div>
+                        <div class="layer-items">
+                            <div class="item">metric_candidates</div>
+                            <div class="item">health_analysis</div>
+                            <div class="item">capacity_planning</div>
+                            <div class="item">conflict_alerts</div>
+                            <div class="item">dax_patterns</div>
+                            <div class="item">reconciliation</div>
+                        </div>
+                        <table style="margin-top: 10px;">
+                            <tr>
+                                <td><strong>Processors:</strong></td>
+                                <td>normalize_silver.py | analyze_health.py | capacity_calculator.py</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Algoritmos:</strong></td>
+                                <td>Fuzzy matching (70%), DAX pattern detection, ML-based dedup</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Output:</strong></td>
+                                <td>JSON + Delta tables para BI reporting</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="text-align: center; margin: 20px 0; color: #667eea; font-size: 20px;">⬇️</div>
+
+                    <div class="layer" style="border-color: #4caf50; border-left: 6px solid #4caf50;">
+                        <div class="layer-name">🟢 GOLD LAYER - Certified & Versioned</div>
+                        <div class="layer-description">
+                            Métricas canónicas aprobadas por gobierno. Fuente única de verdad (MVO) con audit trail completo.
+                        </div>
+                        <div class="layer-items">
+                            <div class="item">canonical_metrics</div>
+                            <div class="item">canonical_dimensions</div>
+                            <div class="item">versioning</div>
+                            <div class="item">audit_trail</div>
+                            <div class="item">rbac_policies</div>
+                            <div class="item">lineage</div>
+                        </div>
+                        <table style="margin-top: 10px;">
+                            <tr>
+                                <td><strong>Workflow:</strong></td>
+                                <td>governance_certification.py + Portal approval</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Acceso:</strong></td>
+                                <td>Semantic models, Power BI embedded, Fabric Lakehouse</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Garantías:</strong></td>
+                                <td>Immutable versions, complete lineage, change tracking</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card full-width">
+                    <div class="card-title">🔄 Data Flow Pipeline</div>
+                    <div style="margin-top: 15px; font-size: 12px;">
+                        <div class="pipeline">
+                            <div class="pipeline-step">Multi-source Extraction</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Bronze (Raw JSON)</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Normalize & Dedupe</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Silver (Candidates)</div>
+                        </div>
+                        <div class="pipeline">
+                            <div class="pipeline-step">Analyze Health</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Detect Conflicts</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Manual Review</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Admin Approval</div>
+                        </div>
+                        <div class="pipeline">
+                            <div class="pipeline-step">Publish to Gold</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Version + Audit</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Distribute via APIs</div>
+                            <div class="arrow">→</div>
+                            <div class="pipeline-step">Update BI Models</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- TAB 3: HEALTH CHECK SERVICE -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <div id="health-check" class="tab-content">
+            <div class="grid">
+                <div class="card full-width">
+                    <div class="card-title">🏥 Power BI Health Check Service</div>
+                    <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">
+                        Módulo especializado para análisis de calidad y optimización de reportes Power BI antes de migración a Fabric.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">📊 Health Score Model</div>
+                    <table>
+                        <tr>
+                            <th>Factor</th>
+                            <th>Peso</th>
+                            <th>Crítico si</th>
+                        </tr>
+                        <tr>
+                            <td>Memory Footprint</td>
+                            <td>30%</td>
+                            <td>>256 MB</td>
+                        </tr>
+                        <tr>
+                            <td>Data Density</td>
+                            <td>20%</td>
+                            <td><15%</td>
+                        </tr>
+                        <tr>
+                            <td>DAX Efficiency</td>
+                            <td>20%</td>
+                            <td><0.7</td>
+                        </tr>
+                        <tr>
+                            <td>Query Performance</td>
+                            <td>15%</td>
+                            <td>5+ hierarchies</td>
+                        </tr>
+                        <tr>
+                            <td>Refresh Duration</td>
+                            <td>10%</td>
+                            <td>>30 min</td>
+                        </tr>
+                        <tr>
+                            <td>RLS Complexity</td>
+                            <td>5%</td>
+                            <td>>5 rules</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🎯 Anti-patrones DAX</div>
+                    <ul class="feature-list" style="margin-top: 0;">
+                        <li>CALCULATE + FILTER anidado</li>
+                        <li>SUMX sin CALCULATE</li>
+                        <li>EVALUATE ROW en medida</li>
+                        <li>Variables con iterators</li>
+                        <li>HASONEVALUE deprecado</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">💾 Fabric SKU Sizing</div>
+                    <div class="metric">
+                        <span class="metric-label">F2</span>
+                        <span class="metric-value">24 CU ($250/mo)</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">F4</span>
+                        <span class="metric-value">48 CU ($500/mo)</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">F8</span>
+                        <span class="metric-value">96 CU ($1k/mo)</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">F16</span>
+                        <span class="metric-value">192 CU ($2k/mo)</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">F32+</span>
+                        <span class="metric-value">384+ CU ($4k+/mo)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="architecture-section full-width">
+                <div class="architecture-title">📈 Caso de Uso: Customer con 50 Reportes</div>
+                <table style="margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th>Escenario</th>
+                            <th>Memory</th>
+                            <th>Health Score</th>
+                            <th>CU Needed</th>
+                            <th>SKU</th>
+                            <th>Price/mo</th>
+                            <th>ROI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Sin Optimizar</strong></td>
+                            <td>34 GB</td>
+                            <td>72/100</td>
+                            <td>1,044</td>
+                            <td><span class="badge badge-critical">F16</span></td>
+                            <td>$2,000</td>
+                            <td>Baseline</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Básica (40h)</strong></td>
+                            <td>29 GB (-15%)</td>
+                            <td>87/100</td>
+                            <td>789</td>
+                            <td><span class="badge badge-ok">F8</span></td>
+                            <td>$1,000</td>
+                            <td>$12k/año, 6mo ROI</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Intermedia (75h)</strong></td>
+                            <td>24 GB (-30%)</td>
+                            <td>97/100</td>
+                            <td>550</td>
+                            <td><span class="badge badge-ok">F4</span></td>
+                            <td>$500</td>
+                            <td>$18k/año, 7.5mo ROI</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Completa (150h)</strong></td>
+                            <td>17 GB (-50%)</td>
+                            <td>100/100</td>
+                            <td>425</td>
+                            <td><span class="badge badge-ok">F4</span></td>
+                            <td>$500</td>
+                            <td>$18k/año, 15mo ROI</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">📝 Outputs Generados</div>
+                    <ul class="feature-list" style="margin-top: 0;">
+                        <li>Health scores JSON (per report)</li>
+                        <li>Capacity report (scenarios)</li>
+                        <li>Top issues per report</li>
+                        <li>ROI calculator results</li>
+                        <li>Growth scenarios (20-200 users)</li>
+                        <li>Optimization roadmap</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🎯 Pricing Models</div>
+                    <div class="phase">
+                        <div class="phase-title">Option A: Diagnóstico Fijo</div>
+                        <div class="phase-meta">$2,500 por análisis (50-100 reportes)<br/>Incluye 2h consultoría</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">Option B: Por Hora</div>
+                        <div class="phase-meta">$150/h implementation<br/>Flexible para proyectos grandes</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">Option C: Hybrid (Recomendado)</div>
+                        <div class="phase-meta">$2,500 Health Check<br/>+ $150/h optimización<br/>Aligned con cliente</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- TAB 4: GOVERNANCE WORKFLOW -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <div id="governance" class="tab-content">
+            <div class="architecture-section full-width">
+                <div class="architecture-title">⚖️ MVO Governance Framework</div>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 20px;">
+                    Minimum Viable Ontology: Framework de gobierno semántico usando RDF/OWL para definiciones canónicas de métricas.
+                </p>
+
+                <div class="workflow">
+                    <div class="workflow-step">
+                        <div class="workflow-number">1</div>
+                        <div class="workflow-content">
+                            <div class="workflow-title">Extraction & Normalization</div>
+                            <div class="workflow-desc">
+                                Extrae metadata de todas las fuentes (PBI, Tableau, QS, Excel).
+                                Normaliza en esquema común: medida → (nombre, DAX/expresión, formato, categoría).
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="workflow-step">
+                        <div class="workflow-number">2</div>
+                        <div class="workflow-content">
+                            <div class="workflow-title">Candidate Grouping</div>
+                            <div class="workflow-desc">
+                                Fuzzy matching (70% umbral) agrupa medidas similares.
+                                Detecta conflictos: nombres similares, DAX diferente.
+                                Genera candidatos para review.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="workflow-step">
+                        <div class="workflow-number">3</div>
+                        <div class="workflow-content">
+                            <div class="workflow-title">Manual Review (Silver)</div>
+                            <div class="workflow-desc">
+                                Business user revisa candidatos en portal.
+                                Resuelve conflictos: "Estos son iguales" vs "Estos son distintos".
+                                Agrega metadata: categoría, owner, SLA, descripción.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="workflow-step">
+                        <div class="workflow-number">4</div>
+                        <div class="workflow-content">
+                            <div class="workflow-title">Admin Approval (Gold)</div>
+                            <div class="workflow-desc">
+                                Admin certifica medida canónica.
+                                Asigna identificador único (MVO ID).
+                                Crea RDF/OWL triple: medida ← código SQL/DAX oficial.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="workflow-step">
+                        <div class="workflow-number">5</div>
+                        <div class="workflow-content">
+                            <div class="workflow-title">Publish & Distribute</div>
+                            <div class="workflow-desc">
+                                Publica en Gold layer (OneLake + Semantic Model).
+                                Versionado automático + audit trail.
+                                APIs exponen definiciones a BI tools.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">🔐 RBAC Policies</div>
+                    <div class="phase">
+                        <div class="phase-title">Analyst</div>
+                        <div class="phase-meta">• Ver Bronze/Silver<br/>• Crear candidatos<br/>• Comentar conflictos</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">Business Owner</div>
+                        <div class="phase-meta">• Resolver candidatos<br/>• Aprobar duplicados<br/>• Definir SLAs</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">Admin</div>
+                        <div class="phase-meta">• Certify Gold<br/>• Manage versions<br/>• Audit trail</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📋 Metadata Model</div>
+                    <table style="font-size: 11px;">
+                        <tr>
+                            <td><strong>Field</strong></td>
+                            <td><strong>Type</strong></td>
+                            <td><strong>Example</strong></td>
+                        </tr>
+                        <tr>
+                            <td>mvo_id</td>
+                            <td>UUID</td>
+                            <td>m_rev_total_12a</td>
+                        </tr>
+                        <tr>
+                            <td>name</td>
+                            <td>String</td>
+                            <td>Revenue Total</td>
+                        </tr>
+                        <tr>
+                            <td>definition</td>
+                            <td>DAX/SQL</td>
+                            <td>SUM([Sales])</td>
+                        </tr>
+                        <tr>
+                            <td>category</td>
+                            <td>Enum</td>
+                            <td>Financial</td>
+                        </tr>
+                        <tr>
+                            <td>owner</td>
+                            <td>Email</td>
+                            <td>finance@co</td>
+                        </tr>
+                        <tr>
+                            <td>sla_refresh</td>
+                            <td>Cron</td>
+                            <td>0 6 * * *</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🔄 Reconciliation Engine</div>
+                    <ul class="feature-list" style="margin-top: 0;">
+                        <li>DAX hash comparison (detect duplicates)</li>
+                        <li>Fuzzy name matching (detect conflicts)</li>
+                        <li>Semantic similarity (same concept?)</li>
+                        <li>Lineage tracking (dependencies)</li>
+                        <li>Change notification (updates)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- TAB 5: MONITORING & ALERTS -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <div id="monitoring" class="tab-content">
+            <div class="grid">
+                <div class="card full-width">
+                    <div class="card-title">📈 Monitoring Dashboard</div>
+                    <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">
+                        Real-time trending, health degradation alerts, y capacity utilization tracking.
+                    </p>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: #667eea;">72.3</div>
+                            <div class="stat-label">Avg Health Score</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: #ff9800;">8</div>
+                            <div class="stat-label">Critical Reports</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: #4caf50;">42</div>
+                            <div class="stat-label">Issues Fixed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: #2196f3;">54.4%</div>
+                            <div class="stat-label">Capacity Used</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">📊 Health Trending</div>
+                    <div style="margin-top: 15px;">
+                        <p style="font-size: 11px; color: #999; margin-bottom: 8px;">Últimos 90 días</p>
+                        <canvas id="trendingChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🚨 Alertas</div>
+                    <div class="phase">
+                        <div class="phase-title">Health Degradation</div>
+                        <div class="phase-meta">Si score baja >10 puntos en 7 días</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">Capacity Threshold</div>
+                        <div class="phase-meta">Si utilización > 80% de SKU actual</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">Refresh SLA Breach</div>
+                        <div class="phase-meta">Si refresh toma >120% del SLA esperado</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">New Anti-patterns</div>
+                        <div class="phase-meta">Si se detectan nuevos anti-patrones DAX</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🔔 Canales Notificación</div>
+                    <ul class="feature-list" style="margin-top: 0;">
+                        <li>Email (digest diaria)</li>
+                        <li>Teams/Slack webhooks</li>
+                        <li>Portal dashboard (real-time)</li>
+                        <li>Power BI alerts</li>
+                        <li>Custom webhooks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="architecture-section full-width">
+                <div class="architecture-title">📅 Scheduled Maintenance</div>
+                <table style="margin-top: 15px; font-size: 12px;">
+                    <tr>
+                        <th>Tarea</th>
+                        <th>Frecuencia</th>
+                        <th>Duración</th>
+                        <th>Owner</th>
+                    </tr>
+                    <tr>
+                        <td>Daily Extraction</td>
+                        <td>6 AM UTC</td>
+                        <td>30-60 min</td>
+                        <td>Azure Function</td>
+                    </tr>
+                    <tr>
+                        <td>Silver Analysis</td>
+                        <td>7 AM UTC</td>
+                        <td>15-30 min</td>
+                        <td>Synapse Analytics</td>
+                    </tr>
+                    <tr>
+                        <td>Health Check Run</td>
+                        <td>Weekly (Sun 2 AM)</td>
+                        <td>60-120 min</td>
+                        <td>Spark Job</td>
+                    </tr>
+                    <tr>
+                        <td>Capacity Forecast</td>
+                        <td>Monthly (1st)</td>
+                        <td>30-45 min</td>
+                        <td>SQL Agent</td>
+                    </tr>
+                    <tr>
+                        <td>Audit Report Gen</td>
+                        <td>Monthly (5th)</td>
+                        <td>15-20 min</td>
+                        <td>Power Automate</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- TAB 6: ROADMAP -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <div id="roadmap" class="tab-content">
+            <div class="architecture-section full-width">
+                <div class="architecture-title">🗺️ Roadmap 12 Meses</div>
+
+                <div class="phase" style="border-color: #ff9800;">
+                    <div class="phase-title">📍 PHASE 1: MVP Launch (Months 1-2) ✅</div>
+                    <div class="phase-meta">
+                        <strong>Power BI Health Check</strong><br/>
+                        ✓ Metadata extraction via REST + Scanner API<br/>
+                        ✓ 6-factor health score model<br/>
+                        ✓ DAX anti-pattern detection<br/>
+                        ✓ Fabric capacity calculator + ROI<br/>
+                        ✓ Interactive portal dashboard<br/>
+                        <strong>Status:</strong> Core scripts complete, portal mockup ready
+                    </div>
+                </div>
+
+                <div class="phase" style="border-color: #2196f3;">
+                    <div class="phase-title">📍 PHASE 2: Backend API & Automation (Months 3-4)</div>
+                    <div class="phase-meta">
+                        <strong>Backend Infrastructure</strong><br/>
+                        □ Flask/FastAPI app with CRUD endpoints<br/>
+                        □ Database (SQL Server / PostgreSQL)<br/>
+                        □ Authentication + RBAC<br/>
+                        □ WebSocket real-time updates<br/>
+                        <strong>Automation</strong><br/>
+                        □ Scheduled daily extractions (Azure Functions)<br/>
+                        □ Automated health check runs (weekly)<br/>
+                        □ Alert system implementation<br/>
+                        □ Trending dashboard in Power BI
+                    </div>
+                </div>
+
+                <div class="phase" style="border-color: #4caf50;">
+                    <div class="phase-title">📍 PHASE 3: Governance & Gold Layer (Months 5-6)</div>
+                    <div class="phase-meta">
+                        <strong>MVO Framework</strong><br/>
+                        □ RDF/OWL ontology for metric definitions<br/>
+                        □ Candidate reconciliation engine<br/>
+                        □ Conflict resolution workflow<br/>
+                        □ Admin certification portal<br/>
+                        <strong>Gold Layer Storage</strong><br/>
+                        □ OneLake Delta Tables<br/>
+                        □ Versioning + audit trail<br/>
+                        □ Semantic model integration<br/>
+                        □ Change tracking & lineage
+                    </div>
+                </div>
+
+                <div class="phase" style="border-color: #9c27b0;">
+                    <div class="phase-title">📍 PHASE 4: Multi-Source Expansion (Months 7-9)</div>
+                    <div class="phase-meta">
+                        <strong>Tableau Analyzer</strong><br/>
+                        □ Extract workbooks via Metadata API<br/>
+                        □ Health scoring for Tableau<br/>
+                        □ Capacity planning for Tableau Server<br/>
+                        <strong>QuickSight Extractor</strong><br/>
+                        □ AWS SDK integration<br/>
+                        □ Analysis health scoring<br/>
+                        □ Custom SQL extraction<br/>
+                        <strong>Excel Consolidator</strong><br/>
+                        □ XLSX + CSV parsing<br/>
+                        □ Range extraction<br/>
+                        □ Named range tracking
+                    </div>
+                </div>
+
+                <div class="phase" style="border-color: #f44336;">
+                    <div class="phase-title">📍 PHASE 5: Fabric Integration (Months 10-11)</div>
+                    <div class="phase-meta">
+                        <strong>Migration Automation</strong><br/>
+                        □ Power BI → Fabric migration scripts<br/>
+                        □ Linked items templates<br/>
+                        □ Capacity optimization recommendations<br/>
+                        <strong>DAX Optimization</strong><br/>
+                        □ Auto-fix anti-patterns<br/>
+                        □ Code generation for optimized measures<br/>
+                        □ Performance tuning suggestions<br/>
+                        <strong>Fabric Monitoring</strong><br/>
+                        □ Integration with Fabric Premium metrics<br/>
+                        □ CU consumption tracking<br/>
+                        □ Actual vs estimated comparison
+                    </div>
+                </div>
+
+                <div class="phase" style="border-color: #00bcd4;">
+                    <div class="phase-title">📍 PHASE 6: SaaS Launch (Month 12)</div>
+                    <div class="phase-meta">
+                        <strong>Production Deployment</strong><br/>
+                        □ Multi-tenant architecture<br/>
+                        □ Enterprise security (SSO, MFA)<br/>
+                        □ Data residency compliance<br/>
+                        <strong>Monetization</strong><br/>
+                        □ Pricing models (tiered subscriptions)<br/>
+                        □ Usage-based billing<br/>
+                        □ Customer portal<br/>
+                        <strong>Support & Docs</strong><br/>
+                        □ API documentation<br/>
+                        □ Customer success playbook<br/>
+                        □ Training materials
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">🎯 Success Metrics</div>
+                    <div class="metric">
+                        <span class="metric-label">Customer Acquisition</span>
+                        <span class="metric-value">10+ SMBs</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">MRR by Month 12</span>
+                        <span class="metric-value">$50k+</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Avg Health Improvement</span>
+                        <span class="metric-value">+25 points</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Customer Savings/Year</span>
+                        <span class="metric-value">$30k-$120k</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Portal Uptime</span>
+                        <span class="metric-value">99.9%</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">💰 Business Model</div>
+                    <div class="phase">
+                        <div class="phase-title">Tier 1: Starter</div>
+                        <div class="phase-meta">$500/mo<br/>10 reportes<br/>Basic health check</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">Tier 2: Professional</div>
+                        <div class="phase-meta">$2,000/mo<br/>100 reportes<br/>Full features + API</div>
+                    </div>
+                    <div class="phase">
+                        <div class="phase-title">Tier 3: Enterprise</div>
+                        <div class="phase-meta">Custom pricing<br/>Unlimited<br/>Dedicated support</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🏆 Competitive Advantage</div>
+                    <ul class="feature-list" style="margin-top: 0;">
+                        <li>Multi-source BI support</li>
+                        <li>MVO governance framework</li>
+                        <li>Fabric cost optimization</li>
+                        <li>Automated deduplication</li>
+                        <li>Real ROI calculations</li>
+                        <li>No vendor lock-in</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(evt, tabName) {
+            // Hide all tabs
+            var contents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < contents.length; i++) {
+                contents[i].classList.remove("active");
+            }
+
+            // Deactivate all tabs
+            var tabs = document.getElementsByClassName("tab");
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove("active");
+            }
+
+            // Show target tab and activate button
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // Health Trending Chart
+        const trendingCtx = document.getElementById('trendingChart').getContext('2d');
+        new Chart(trendingCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8', 'Week 9', 'Week 10', 'Week 11', 'Week 12', 'Week 13'],
+                datasets: [{
+                    label: 'Avg Health Score',
+                    data: [65.2, 66.1, 67.3, 68.5, 69.2, 70.1, 71.4, 72.3, 72.8, 73.5, 74.1, 75.2, 76.8],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#667eea',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 60,
+                        max: 80,
+                        ticks: {
+                            color: '#999'
+                        },
+                        grid: {
+                            color: '#333'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#999'
+                        },
+                        grid: {
+                            color: '#333'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
