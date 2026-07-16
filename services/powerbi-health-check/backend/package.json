@@ -1,0 +1,50 @@
+{
+  "name": "mivisualization-health-check",
+  "version": "1.0.0",
+  "description": "Power BI Health Check Service - Quality analysis and optimization for Fabric migration",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "extract": "node src/cli/extract-powerbi.js",
+    "analyze": "node src/cli/analyze-health.js",
+    "capacity": "node src/cli/calculate-capacity.js",
+    "lint": "eslint src/",
+    "seed": "node src/cli/seed-data.js"
+  },
+  "keywords": [
+    "powerbi",
+    "health-check",
+    "fabric",
+    "capacity-planning",
+    "optimization"
+  ],
+  "author": "MIvisualization Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.1.0",
+    "@azure/identity": "^3.4.0",
+    "@azure/msal-node": "^2.0.0",
+    "sqlite3": "^5.1.6",
+    "sqlite": "^5.0.1",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "joi": "^17.11.0",
+    "lodash": "^4.17.21",
+    "async": "^3.2.5",
+    "date-fns": "^2.30.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.52.0"
+  }
+}
